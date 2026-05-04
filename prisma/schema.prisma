@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("CANDIDATO")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  candidateProfile   CandidateProfile?
+  statusHistories    StatusHistory[]
+  correctionRequests CorrectionRequest[]
+  documentReviews    Document[]          @relation("ReviewedBy")
+  internalAnalyses   InternalAnalysis[]  @relation("AnalysisCreatedBy")
+}
+
+model CandidateProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  status      String  @default("RASCUNHO")
+  hiringType  String?
+
+  fullName      String?
+  fatherName    String?
+  motherName    String?
+  gender        String?
+  nationality   String?
+  birthplace    String?
+  birthDate     DateTime?
+  maritalStatus String?
+  hasChildren   Boolean?
+  childrenCount Int?
+
+  address    String?
+  number     String?
+  complement String?
+  district   String?
+  city       String?
+  state      String?
+  zipCode    String?
+
+  phone  String?
+  mobile String?
+  email  String?
+  cpf    String?
+
+  submittedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyData        CompanyData?
+  partners           Partner[]
+  bankData           BankData?
+  commercialInfo     CommercialInfo?
+  documents          Document[]
+  declarations       DeclarationAcceptance[]
+  statusHistories    StatusHistory[]
+  correctionRequests CorrectionRequest[]
+  internalAnalysis   InternalAnalysis?
+}
+
+model CompanyData {
+  id                 String           @id @default(cuid())
+  candidateProfileId String           @unique
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  corporateName     String?
+  tradeName         String?
+  cnpj              String?
+  stateRegistration String?
+  address           String?
+  number            String?
+  complement        String?
+  district          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  phone             String?
+  email             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Partner {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  fullName      String?
+  cpf           String?
+  rg            String?
+  maritalStatus String?
+  profession    String?
+  address       String?
+  phone         String?
+  email         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BankData {
+  id                 String           @id @default(cuid())
+  candidateProfileId String           @unique
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  bank          String?
+  agency        String?
+  account       String?
+  accountType   String?
+  accountHolder String?
+  holderCpfCnpj String?
+  pixKey        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CommercialInfo {
+  id                 String           @id @default(cuid())
+  candidateProfileId String           @unique
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  operationArea        String?
+  operationRegion      String?
+  marketExperienceTime String?
+  representedCompanies String?
+  previousExperience   String?
+  hasCore              Boolean?
+  coreNumber           String?
+  coreExpirationDate   DateTime?
+  observations         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  documentType     String
+  fileName         String
+  originalName     String
+  fileUrl          String
+  mimeType         String
+  size             Int
+  fileData         Bytes?
+  status           String   @default("ENVIADO")
+  adminObservation String?
+
+  uploadedAt   DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewedBy   User?     @relation("ReviewedBy", fields: [reviewedById], references: [id])
+
+  correctionItems CorrectionRequestItem[]
+}
+
+model DeclarationAcceptance {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  declarationType String
+  textVersion     String
+  acceptedAt      DateTime @default(now())
+  ipAddress       String?
+}
+
+model InternalAnalysis {
+  id                 String           @id @default(cuid())
+  candidateProfileId String           @unique
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  rhOpinion               String?
+  financialOpinion        String?
+  legalOpinion            String?
+  commercialObservation   String?
+  approvedOperationArea   String?
+  contractParticularities String?
+  riskNotes               String?
+  finalRecommendation     String?
+
+  createdById String?
+  createdBy   User?   @relation("AnalysisCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StatusHistory {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  oldStatus   String?
+  newStatus   String
+  action      String
+  observation String?
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model CorrectionRequest {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  message String
+  status  String @default("PENDENTE")
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  items CorrectionRequestItem[]
+}
+
+model CorrectionRequestItem {
+  id                  String            @id @default(cuid())
+  correctionRequestId String
+  correctionRequest   CorrectionRequest @relation(fields: [correctionRequestId], references: [id])
+
+  fieldName  String?
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id])
+  description String?
+  resolved    Boolean  @default(false)
+}
