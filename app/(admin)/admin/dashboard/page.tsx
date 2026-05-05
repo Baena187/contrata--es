@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { CandidateStatus } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 async function getStats() {
   const [total, inAnalysis, withPending, approved, rejected, contractGenerated] = await Promise.all([
     prisma.candidateProfile.count({ where: { status: { not: 'RASCUNHO' } } }),

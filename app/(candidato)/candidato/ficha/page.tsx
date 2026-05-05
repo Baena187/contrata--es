@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { FichaWizard } from './ficha-wizard'
 
+export const dynamic = 'force-dynamic'
+
 export default async function FichaPage() {
   const headersList = await headers()
   const userId = headersList.get('x-user-id')

@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getHiringTypeLabel, getStatusLabel } from '@/lib/utils'
 import { BarChart3 } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function RelatoriosPage() {
   const [byStatus, byType, byState, byMonth] = await Promise.all([
     prisma.candidateProfile.groupBy({ by: ['status'], _count: true }),

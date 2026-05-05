@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { UsuariosManager } from './usuarios-manager'
 
+export const dynamic = 'force-dynamic'
+
 export default async function UsuariosPage() {
   const headersList = await headers()
   const userRole = headersList.get('x-user-role')

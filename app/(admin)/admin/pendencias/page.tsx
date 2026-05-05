@@ -5,6 +5,8 @@ import { StatusBadge } from '@/components/status-badge'
 import { AlertCircle } from 'lucide-react'
 import { formatDate, formatDateTime } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PendenciasPage() {
   const candidates = await prisma.candidateProfile.findMany({
     where: { status: 'DOCUMENTACAO_PENDENTE' },

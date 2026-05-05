@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db'
 import { CandidateProfileView } from './candidate-profile-view'
 import { Role } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CandidatoPerfilPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const headersList = await headers()

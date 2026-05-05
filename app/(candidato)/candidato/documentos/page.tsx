@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { DocumentUploadArea } from './document-upload-area'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DocumentosPage() {
   const headersList = await headers()
   const userId = headersList.get('x-user-id')

@@ -8,6 +8,8 @@ import { StatusBadge } from '@/components/status-badge'
 import { StatusTimeline } from '@/components/status-timeline'
 import { FileText, Upload, AlertCircle, ArrowRight, CheckCircle, Clock } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CandidatoDashboard() {
   const headersList = await headers()
   const userId = headersList.get('x-user-id')

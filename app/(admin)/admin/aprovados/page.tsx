@@ -5,6 +5,8 @@ import { StatusBadge } from '@/components/status-badge'
 import { CheckCircle } from 'lucide-react'
 import { formatDate, getHiringTypeLabel } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AprovadosPage() {
   const candidates = await prisma.candidateProfile.findMany({
     where: { status: { in: ['APROVADO', 'CONTRATO_GERADO', 'CONTRATO_ASSINADO', 'FINALIZADO'] } },

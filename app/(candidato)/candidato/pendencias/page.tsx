@@ -7,6 +7,8 @@ import { AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PendenciasPage() {
   const headersList = await headers()
   const userId = headersList.get('x-user-id')

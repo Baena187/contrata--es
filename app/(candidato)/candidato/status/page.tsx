@@ -8,6 +8,8 @@ import { formatDate } from '@/lib/utils'
 import { CheckCircle, Circle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 const STATUS_FLOW = [
   { status: 'RASCUNHO', label: 'Rascunho' },
   { status: 'ENVIADO_PARA_ANALISE', label: 'Enviado para Análise' },

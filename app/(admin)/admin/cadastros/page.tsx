@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db'
 import { CandidateListFilters } from './list-filters'
 
+export const dynamic = 'force-dynamic'
+
 interface SearchParams {
   q?: string
   status?: string
