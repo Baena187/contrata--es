@@ -121,7 +121,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     witness2Cpf: c.witnesses[1]?.cpf ?? '000.000.000-00',
   }
 
-  const docxBuffer = await generateContractDocx(contractData)
+  let docxBuffer: Buffer
+  try {
+    docxBuffer = await generateContractDocx(contractData)
+  } catch (docxErr: any) {
+    console.error('[GENERATE DOCX ERROR]', docxErr)
+    return NextResponse.json(
+      { error: 'Erro ao gerar o arquivo DOCX', detail: docxErr.message },
+      { status: 500 }
+    )
+  }
   const docxBase64 = docxBuffer.toString('base64')
 
   // Atualizar status do contrato e do candidato

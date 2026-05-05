@@ -170,22 +170,27 @@ export function ContractTab({ profile, userRole, currentUserId }: Props) {
     }
   }
 
+  // Salva rascunho (upsert) — o backend cria ou atualiza automaticamente
+  async function saveDraftSilent(): Promise<boolean> {
+    const payload = buildPayload()
+    const res = await fetch(`/api/admin/cadastros/${profile.id}/contrato`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error ?? `Erro ao salvar rascunho (${res.status})`)
+    }
+    const data = await res.json()
+    setContract(data.contract)
+    return true
+  }
+
   async function handleSaveDraft() {
     setLoading(true)
     try {
-      const payload = buildPayload()
-      const method = contract ? 'PUT' : 'POST'
-      const res = await fetch(`/api/admin/cadastros/${profile.id}/contrato`, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error ?? 'Erro')
-      }
-      const data = await res.json()
-      setContract(data.contract)
+      await saveDraftSilent()
       toast({ title: 'Rascunho salvo!', variant: 'success' })
     } catch (e: any) {
       toast({ title: e.message || 'Erro ao salvar', variant: 'destructive' })
@@ -269,28 +274,35 @@ export function ContractTab({ profile, userRole, currentUserId }: Props) {
   }
 
   async function handleGenerate() {
-    // Salvar primeiro se não existe
-    if (!contract) {
-      await handleSaveDraft()
-    }
     setLoadingGenerate(true)
     try {
+      // SEMPRE salva o estado atual do formulário antes de gerar
+      await saveDraftSilent()
+
       const res = await fetch(`/api/admin/cadastros/${profile.id}/contrato/generate`, {
         method: 'POST',
       })
+
       if (!res.ok) {
-        const err = await res.json()
-        const msgs = err.errors ? err.errors.join('\n• ') : (err.error ?? 'Erro')
-        throw new Error(msgs)
+        let errMsg = `Erro ${res.status}`
+        try {
+          const err = await res.json()
+          errMsg = err.errors ? '• ' + err.errors.join('\n• ') : (err.error ?? errMsg)
+        } catch { /* body already consumed */ }
+        throw new Error(errMsg)
       }
+
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       const repName = isPj ? (profile.companyData?.corporateName ?? 'representante') : (profile.fullName ?? 'representante')
       a.download = `contrato-${repName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.docx`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
+
       // Recarregar dados do contrato
       const reload = await fetch(`/api/admin/cadastros/${profile.id}/contrato`)
       if (reload.ok) {
@@ -299,7 +311,7 @@ export function ContractTab({ profile, userRole, currentUserId }: Props) {
       }
       toast({ title: 'Contrato gerado e baixado!', variant: 'success' })
     } catch (e: any) {
-      toast({ title: e.message || 'Erro ao gerar contrato', variant: 'destructive' })
+      toast({ title: 'Erro ao gerar contrato', description: e.message, variant: 'destructive' })
     } finally {
       setLoadingGenerate(false)
     }
@@ -331,14 +343,17 @@ export function ContractTab({ profile, userRole, currentUserId }: Props) {
   const repName = isPj ? (profile.companyData?.corporateName ?? profile.user?.name) : (profile.fullName ?? profile.user?.name)
   const repDoc = isPj ? profile.companyData?.cnpj : profile.cpf
 
-  // Alertas de dados faltantes
+  // Campos que BLOQUEIAM a geração (obrigatórios no contrato)
   const missingFields: string[] = []
-  if (!repName) missingFields.push('Nome/Razão social')
-  if (isPj && !profile.companyData?.cnpj) missingFields.push('CNPJ')
-  if (!isPj && !profile.cpf) missingFields.push('CPF')
-  if (!profile.commercialInfo?.hasCore || !profile.commercialInfo?.coreNumber) missingFields.push('CORE/COREMAT')
+  if (!repName) missingFields.push('Nome/Razão social do representante')
+  if (isPj && !profile.companyData?.cnpj) missingFields.push('CNPJ da empresa')
+  if (!isPj && !profile.cpf) missingFields.push('CPF do representante')
   const repAddr = isPj ? profile.companyData?.address : profile.address
-  if (!repAddr) missingFields.push('Endereço')
+  if (!repAddr) missingFields.push('Endereço do representante')
+
+  // Campos de aviso (não bloqueiam, mas é bom informar)
+  const warningFields: string[] = []
+  if (!profile.commercialInfo?.hasCore || !profile.commercialInfo?.coreNumber) warningFields.push('CORE/COREMAT não informado no cadastro')
 
   return (
     <div className="space-y-4">
@@ -374,13 +389,26 @@ export function ContractTab({ profile, userRole, currentUserId }: Props) {
 
       {/* Alerta de dados faltantes */}
       {missingFields.length > 0 && (
+        <Card className="border-red-300 bg-red-50">
+          <CardContent className="p-4 flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-800">Dados obrigatórios ausentes — complete o cadastro antes de gerar:</p>
+              <ul className="text-xs text-red-700 mt-1 list-disc list-inside">
+                {missingFields.map((f) => <li key={f}>{f}</li>)}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {missingFields.length === 0 && warningFields.length > 0 && (
         <Card className="border-yellow-300 bg-yellow-50">
           <CardContent className="p-4 flex gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-yellow-800">Dados obrigatórios ausentes no cadastro:</p>
+              <p className="text-sm font-semibold text-yellow-800">Atenção:</p>
               <ul className="text-xs text-yellow-700 mt-1 list-disc list-inside">
-                {missingFields.map((f) => <li key={f}>{f}</li>)}
+                {warningFields.map((f) => <li key={f}>{f}</li>)}
               </ul>
             </div>
           </CardContent>
