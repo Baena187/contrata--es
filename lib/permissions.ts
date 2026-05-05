@@ -14,6 +14,9 @@ export const PERMISSIONS = {
   canApproveDocuments: ['ADMIN', 'RH'] as Role[],
   canGeneratePDF: ['ADMIN', 'RH', 'FINANCEIRO', 'JURIDICO'] as Role[],
   canViewInternalAnalysis: ['ADMIN', 'RH', 'FINANCEIRO', 'JURIDICO'] as Role[],
+  canViewContract: ['ADMIN', 'RH', 'JURIDICO'] as Role[],
+  canGenerateContract: ['ADMIN', 'RH', 'JURIDICO'] as Role[],
+  canSignContract: ['ADMIN', 'RH'] as Role[],
 } as const
 
 export function can(userRole: Role, permission: keyof typeof PERMISSIONS): boolean {

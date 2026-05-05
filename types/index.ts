@@ -18,6 +18,13 @@ export type Gender = 'MASCULINO' | 'FEMININO' | 'OUTRO' | 'NAO_INFORMADO'
 export type MaritalStatus = 'SOLTEIRO' | 'CASADO' | 'DIVORCIADO' | 'VIUVO' | 'UNIAO_ESTAVEL' | 'OUTRO'
 export type AccountType = 'CORRENTE' | 'POUPANCA' | 'PAGAMENTO'
 export type CorrectionStatus = 'PENDENTE' | 'RESOLVIDO' | 'CANCELADO'
+export type ContractStatus =
+  | 'NAO_GERADO'
+  | 'RASCUNHO'
+  | 'GERADO'
+  | 'ENVIADO_ASSINATURA'
+  | 'ASSINADO'
+  | 'CANCELADO'
 
 export interface UserSession {
   userId: string

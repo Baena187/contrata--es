@@ -23,6 +23,8 @@ model User {
   correctionRequests CorrectionRequest[]
   documentReviews    Document[]          @relation("ReviewedBy")
   internalAnalyses   InternalAnalysis[]  @relation("AnalysisCreatedBy")
+  contractsGenerated GeneratedContract[] @relation("ContractGeneratedBy")
+  contractHistories  ContractHistory[]   @relation("ContractHistoryCreatedBy")
 }
 
 model CandidateProfile {
@@ -69,6 +71,7 @@ model CandidateProfile {
   statusHistories    StatusHistory[]
   correctionRequests CorrectionRequest[]
   internalAnalysis   InternalAnalysis?
+  contract           GeneratedContract?
 }
 
 model CompanyData {
@@ -244,4 +247,82 @@ model CorrectionRequestItem {
   document   Document? @relation(fields: [documentId], references: [id])
   description String?
   resolved    Boolean  @default(false)
+}
+
+model GeneratedContract {
+  id                 String           @id @default(cuid())
+  candidateProfileId String           @unique
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  status         String  @default("NAO_GERADO")
+  contractNumber String?
+
+  startDate      DateTime?
+  endDate        DateTime?
+  signatureCity  String?
+  signatureState String?
+  signatureDate  DateTime?
+  operationZone  String?
+  notes          String?
+
+  representadaRazaoSocial        String?
+  representadaCnpj               String?
+  representadaEndereco           String?
+  representadaCidade             String?
+  representadaUf                 String?
+  representadaCep                String?
+  representadaRepresentanteLegal String?
+  representadaRepresentanteCpf   String?
+  representadaRepresentanteRg    String?
+
+  generatedById String?
+  generatedBy   User?   @relation("ContractGeneratedBy", fields: [generatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  commissions ContractCommission[]
+  witnesses   ContractWitness[]
+  history     ContractHistory[]
+}
+
+model ContractCommission {
+  id                  String            @id @default(cuid())
+  generatedContractId String
+  generatedContract   GeneratedContract @relation(fields: [generatedContractId], references: [id])
+
+  category    String
+  minPercent  Float
+  maxPercent  Float
+  observation String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContractWitness {
+  id                  String            @id @default(cuid())
+  generatedContractId String
+  generatedContract   GeneratedContract @relation(fields: [generatedContractId], references: [id])
+
+  name         String
+  cpf          String
+  witnessOrder Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContractHistory {
+  id                  String            @id @default(cuid())
+  generatedContractId String
+  generatedContract   GeneratedContract @relation(fields: [generatedContractId], references: [id])
+
+  action      String
+  observation String?
+
+  createdById String?
+  createdBy   User?   @relation("ContractHistoryCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
 }

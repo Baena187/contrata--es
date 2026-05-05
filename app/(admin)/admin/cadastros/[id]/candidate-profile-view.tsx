@@ -17,6 +17,7 @@ import { Role } from '@/types'
 import { can } from '@/lib/permissions'
 import { formatDate, formatDateTime, formatFileSize, getHiringTypeLabel } from '@/lib/utils'
 import { CheckCircle, XCircle, AlertCircle, FileText, Eye, ArrowLeft, Printer } from 'lucide-react'
+import { ContractTab } from './contract-tab'
 
 interface Props {
   profile: any
@@ -155,7 +156,8 @@ export function CandidateProfileView({ profile, userRole, currentUserId }: Props
   const canViewBank = can(userRole, 'canViewBankData')
   const canViewAnalysis = can(userRole, 'canViewInternalAnalysis')
 
-  const tabs = ['resumo', 'pessoal', 'empresa', 'socios', 'documentos', canViewBank && 'bancarios', 'comercial', canViewAnalysis && 'analise', 'historico'].filter(Boolean) as string[]
+  const canViewContract = can(userRole, 'canViewContract')
+  const tabs = ['resumo', 'pessoal', 'empresa', 'socios', 'documentos', canViewBank && 'bancarios', 'comercial', canViewAnalysis && 'analise', canViewContract && 'contrato', 'historico'].filter(Boolean) as string[]
 
   return (
     <div className="space-y-4">
@@ -203,7 +205,7 @@ export function CandidateProfileView({ profile, userRole, currentUserId }: Props
         <TabsList className="flex flex-wrap h-auto gap-1 bg-gray-100 p-1">
           {tabs.map((tab) => (
             <TabsTrigger key={tab} value={tab} className="text-xs">
-              {tab === 'pessoal' ? 'Dados Pessoais' : tab === 'bancarios' ? 'Banco' : tab === 'analise' ? 'Análise Interna' : tab === 'historico' ? 'Histórico' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'pessoal' ? 'Dados Pessoais' : tab === 'bancarios' ? 'Banco' : tab === 'analise' ? 'Análise Interna' : tab === 'historico' ? 'Histórico' : tab === 'contrato' ? 'Contrato' : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -385,6 +387,12 @@ export function CandidateProfileView({ profile, userRole, currentUserId }: Props
                 <Button onClick={saveAnalysis} disabled={loading}>Salvar Análise</Button>
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {canViewContract && (
+          <TabsContent value="contrato">
+            <ContractTab profile={profile} userRole={userRole} currentUserId={currentUserId} />
           </TabsContent>
         )}
 
