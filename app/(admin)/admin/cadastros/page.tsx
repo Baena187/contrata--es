@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { prisma, withRetry } from '@/lib/db'
 import { CandidateListFilters } from './list-filters'
 
 export const dynamic = 'force-dynamic'
@@ -45,7 +45,7 @@ export default async function CadastrosPage({
     where.state = params.state
   }
 
-  const [candidates, total] = await Promise.all([
+  const [candidates, total] = await withRetry(() => Promise.all([
     prisma.candidateProfile.findMany({
       where,
       orderBy: { updatedAt: 'desc' },
@@ -58,7 +58,7 @@ export default async function CadastrosPage({
       },
     }),
     prisma.candidateProfile.count({ where }),
-  ])
+  ]))
 
   return (
     <div className="space-y-6">

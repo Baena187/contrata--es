@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
-import { prisma } from '@/lib/db'
+import { prisma, withRetry } from '@/lib/db'
 import { CandidateProfileView } from './candidate-profile-view'
 import { Role } from '@/types'
 
@@ -12,7 +12,7 @@ export default async function CandidatoPerfilPage({ params }: { params: Promise<
   const userRole = headersList.get('x-user-role') as Role
   const userId = headersList.get('x-user-id') as string
 
-  const profile = await prisma.candidateProfile.findUnique({
+  const profile = await withRetry(() => prisma.candidateProfile.findUnique({
     where: { id },
     include: {
       user: { select: { name: true, email: true } },
@@ -38,7 +38,7 @@ export default async function CandidatoPerfilPage({ params }: { params: Promise<
         },
       },
     },
-  })
+  }))
 
   if (!profile) notFound()
 

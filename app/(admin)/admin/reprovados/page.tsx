@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { prisma, withRetry } from '@/lib/db'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/status-badge'
@@ -8,7 +8,7 @@ import { formatDate, getHiringTypeLabel } from '@/lib/utils'
 export const dynamic = 'force-dynamic'
 
 export default async function ReprovadosPage() {
-  const candidates = await prisma.candidateProfile.findMany({
+  const candidates = await withRetry(() => prisma.candidateProfile.findMany({
     where: { status: 'REPROVADO' },
     orderBy: { updatedAt: 'desc' },
     include: {
@@ -20,7 +20,7 @@ export default async function ReprovadosPage() {
         take: 1,
       },
     },
-  })
+  }))
 
   return (
     <div className="space-y-6">

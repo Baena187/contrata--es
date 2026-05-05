@@ -1,47 +1,50 @@
-import { prisma } from '@/lib/db'
+import { prisma, withRetry } from '@/lib/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/status-badge'
 import { getHiringTypeLabel, formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import {
   FileText, Clock, AlertCircle, CheckCircle, XCircle,
-  FileSignature, Users, TrendingUp
+  FileSignature, Users, TrendingUp, WifiOff,
 } from 'lucide-react'
-import { CandidateStatus } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
 async function getStats() {
-  const [total, inAnalysis, withPending, approved, rejected, contractGenerated] = await Promise.all([
-    prisma.candidateProfile.count({ where: { status: { not: 'RASCUNHO' } } }),
-    prisma.candidateProfile.count({
-      where: { status: { in: ['EM_ANALISE_RH', 'EM_ANALISE_FINANCEIRA', 'EM_ANALISE_JURIDICA', 'ENVIADO_PARA_ANALISE'] } }
-    }),
-    prisma.candidateProfile.count({ where: { status: 'DOCUMENTACAO_PENDENTE' } }),
-    prisma.candidateProfile.count({ where: { status: 'APROVADO' } }),
-    prisma.candidateProfile.count({ where: { status: 'REPROVADO' } }),
-    prisma.candidateProfile.count({ where: { status: { in: ['CONTRATO_GERADO', 'CONTRATO_ASSINADO', 'FINALIZADO'] } } }),
-  ])
+  return withRetry(async () => {
+    const [total, inAnalysis, withPending, approved, rejected, contractGenerated] = await Promise.all([
+      prisma.candidateProfile.count({ where: { status: { not: 'RASCUNHO' } } }),
+      prisma.candidateProfile.count({
+        where: { status: { in: ['EM_ANALISE_RH', 'EM_ANALISE_FINANCEIRA', 'EM_ANALISE_JURIDICA', 'ENVIADO_PARA_ANALISE'] } }
+      }),
+      prisma.candidateProfile.count({ where: { status: 'DOCUMENTACAO_PENDENTE' } }),
+      prisma.candidateProfile.count({ where: { status: 'APROVADO' } }),
+      prisma.candidateProfile.count({ where: { status: 'REPROVADO' } }),
+      prisma.candidateProfile.count({ where: { status: { in: ['CONTRATO_GERADO', 'CONTRATO_ASSINADO', 'FINALIZADO'] } } }),
+    ])
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const sentToday = await prisma.candidateProfile.count({
-    where: { submittedAt: { gte: today } }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const sentToday = await prisma.candidateProfile.count({
+      where: { submittedAt: { gte: today } }
+    })
+
+    return { total, sentToday, inAnalysis, withPending, approved, rejected, contractGenerated }
   })
-
-  return { total, sentToday, inAnalysis, withPending, approved, rejected, contractGenerated }
 }
 
 async function getRecentCandidates() {
-  return prisma.candidateProfile.findMany({
-    where: { status: { not: 'RASCUNHO' } },
-    orderBy: { updatedAt: 'desc' },
-    take: 8,
-    include: {
-      user: { select: { name: true, email: true } },
-      companyData: { select: { cnpj: true } },
-    },
-  })
+  return withRetry(() =>
+    prisma.candidateProfile.findMany({
+      where: { status: { not: 'RASCUNHO' } },
+      orderBy: { updatedAt: 'desc' },
+      take: 8,
+      include: {
+        user: { select: { name: true, email: true } },
+        companyData: { select: { cnpj: true } },
+      },
+    })
+  )
 }
 
 const statCards = [
@@ -54,8 +57,21 @@ const statCards = [
   { label: 'Contratos', key: 'contractGenerated', icon: FileSignature, color: 'text-teal-600', bg: 'bg-teal-50' },
 ]
 
+const emptyStats = { total: 0, sentToday: 0, inAnalysis: 0, withPending: 0, approved: 0, rejected: 0, contractGenerated: 0 }
+
 export default async function AdminDashboard() {
-  const [stats, recent] = await Promise.all([getStats(), getRecentCandidates()])
+  let stats = emptyStats
+  let recent: any[] = []
+  let dbError = false
+
+  try {
+    const [s, r] = await Promise.all([getStats(), getRecentCandidates()])
+    stats = s
+    recent = r
+  } catch (err: any) {
+    console.error('[Dashboard] Erro ao carregar dados:', err?.message)
+    dbError = true
+  }
 
   return (
     <div className="space-y-6">
@@ -63,6 +79,17 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">Visão geral dos cadastros de representantes</p>
       </div>
+
+      {dbError && (
+        <div className="flex items-center gap-3 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+          <WifiOff className="h-4 w-4 flex-shrink-0" />
+          <span>
+            O banco de dados está iniciando (Neon cold start).{' '}
+            <a href="/admin/dashboard" className="underline font-medium">Clique aqui para recarregar</a>
+            {' '}ou aguarde alguns segundos.
+          </span>
+        </div>
+      )}
 
       {/* Cards de estatísticas */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
@@ -75,7 +102,7 @@ export default async function AdminDashboard() {
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.bg} mb-3`}>
                   <Icon className={`h-5 w-5 ${card.color}`} />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
+                <p className="text-2xl font-bold text-gray-900">{dbError ? '—' : value}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
               </CardContent>
             </Card>
@@ -92,7 +119,12 @@ export default async function AdminDashboard() {
           </Link>
         </CardHeader>
         <CardContent className="p-0">
-          {recent.length === 0 ? (
+          {dbError ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <WifiOff className="h-10 w-10 text-gray-300 mb-3" />
+              <p className="text-gray-400 text-sm">Banco de dados iniciando — recarregue a página</p>
+            </div>
+          ) : recent.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Users className="h-10 w-10 text-gray-300 mb-3" />
               <p className="text-gray-400 text-sm">Nenhum cadastro enviado ainda</p>
@@ -132,10 +164,7 @@ export default async function AdminDashboard() {
                         {formatDate(c.submittedAt)}
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/admin/cadastros/${c.id}`}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
+                        <Link href={`/admin/cadastros/${c.id}`} className="text-sm text-blue-600 hover:underline">
                           Ver
                         </Link>
                       </td>
