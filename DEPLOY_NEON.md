@@ -10,7 +10,6 @@ No `.env` local e no Netlify, configure:
 DATABASE_URL="postgresql://user:password@ep-example-pooler.region.aws.neon.tech/neondb?sslmode=require&connect_timeout=15"
 DIRECT_URL="postgresql://user:password@ep-example.region.aws.neon.tech/neondb?sslmode=require&connect_timeout=15"
 JWT_SECRET="uma-chave-forte"
-NEXTAUTH_URL="https://seu-site.netlify.app"
 MAX_FILE_SIZE=10485760
 ```
 

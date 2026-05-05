@@ -62,7 +62,6 @@ function parseUrl(name) {
 const databaseUrl = parseUrl('DATABASE_URL')
 const directUrl = parseUrl('DIRECT_URL')
 const jwtSecret = readEnv('JWT_SECRET')
-const nextAuthUrl = readEnv('NEXTAUTH_URL')
 
 if (databaseUrl?.hostname.endsWith('.neon.tech') && !databaseUrl.hostname.includes('-pooler.')) {
   errors.push('DATABASE_URL do Neon deve usar a conexao pooled, com "-pooler" no host.')
@@ -74,10 +73,6 @@ if (directUrl?.hostname.endsWith('.neon.tech') && directUrl.hostname.includes('-
 
 if (!jwtSecret || jwtSecret === 'your-super-secret-jwt-key-change-this-in-production') {
   errors.push('JWT_SECRET precisa ser uma chave forte real.')
-}
-
-if (!nextAuthUrl || !/^https?:\/\//.test(nextAuthUrl)) {
-  errors.push('NEXTAUTH_URL precisa ser uma URL http(s).')
 }
 
 if (errors.length > 0) {
