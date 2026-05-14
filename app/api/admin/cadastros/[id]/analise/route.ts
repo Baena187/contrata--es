@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { can } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 import { Role } from '@/types'
 
 export async function PUT(
@@ -45,7 +46,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ADMIN ANALISE]', error)
+    logger.error('ADMIN ANALISE', 'Erro ao salvar análise', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

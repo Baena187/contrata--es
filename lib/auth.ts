@@ -3,9 +3,11 @@ import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
 import { Role } from '@/types'
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-secret-key-change-in-production'
-)
+const jwtSecretRaw = process.env.JWT_SECRET
+if (!jwtSecretRaw) {
+  throw new Error('JWT_SECRET não está definido. Configure a variável de ambiente antes de iniciar.')
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecretRaw)
 
 const COOKIE_NAME = 'portal-auth-token'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 // 7 dias

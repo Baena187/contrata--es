@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const INTERNAL_ROLES = ['ADMIN', 'RH', 'FINANCEIRO', 'JURIDICO']
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ADMIN USUARIOS POST]', error)
+    logger.error('ADMIN USUARIOS', 'Erro ao criar usuário', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

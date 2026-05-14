@@ -62,6 +62,9 @@ model CandidateProfile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([status])
+  @@index([cpf])
+
   companyData        CompanyData?
   partners           Partner[]
   bankData           BankData?
@@ -95,6 +98,8 @@ model CompanyData {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([cnpj])
 }
 
 model Partner {
@@ -160,6 +165,7 @@ model Document {
   fileName         String
   originalName     String
   fileUrl          String
+  blobUrl          String?
   mimeType         String
   size             Int
   fileData         Bytes?

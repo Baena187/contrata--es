@@ -2,17 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { setAuthCookie } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
+
+const PASSWORD_RULES = /^(?=.*[A-Z])(?=.*\d).{8,}$/
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(`register:${ip}`, 3, 60 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Muitas tentativas de cadastro. Tente novamente em 1 hora.' },
+      { status: 429 }
+    )
+  }
+
+  let body: any
   try {
-    const body = await request.json()
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  }
+
+  try {
     const { name, email, password } = body
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 })
     }
-    if (password.length < 6) {
-      return NextResponse.json({ error: 'Senha deve ter pelo menos 6 caracteres' }, { status: 400 })
+    if (!PASSWORD_RULES.test(password)) {
+      return NextResponse.json(
+        { error: 'Senha deve ter no mínimo 8 caracteres, uma letra maiúscula e um número.' },
+        { status: 400 }
+      )
     }
 
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
@@ -49,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[AUTH REGISTER]', error)
+    logger.error('AUTH REGISTER', 'Erro ao criar conta', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

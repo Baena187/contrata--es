@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { can } from '@/lib/permissions'
-import { Role } from '@/types'
+import { logger } from '@/lib/logger'
+import { Role, DocumentStatus } from '@/types'
+
+const VALID_DOC_STATUSES: DocumentStatus[] = ['PENDENTE', 'ENVIADO', 'EM_ANALISE', 'APROVADO', 'RECUSADO']
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let body: Record<string, unknown>
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  }
+
   try {
     const user = await getAuthCookie()
     if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -16,8 +26,11 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
-    const { status, observation } = body
+    const { status, observation } = body as { status: string; observation?: string }
+
+    if (!status || !VALID_DOC_STATUSES.includes(status as DocumentStatus)) {
+      return NextResponse.json({ error: 'Status de documento inválido' }, { status: 400 })
+    }
 
     const doc = await prisma.document.findUnique({ where: { id } })
     if (!doc) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
@@ -45,7 +58,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ADMIN DOC PATCH]', error)
+    logger.error('ADMIN DOCUMENTO', 'Erro ao atualizar status do documento', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

@@ -1,7 +1,9 @@
 import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = [
@@ -39,15 +41,30 @@ export async function POST(request: NextRequest) {
     const ext = file.name.split('.').pop() || 'bin'
     const fileName = `${documentType}-${Date.now()}.${ext}`
     const documentId = randomUUID()
-    const fileUrl = `/api/candidatos/documentos/${documentId}/arquivo`
-    const bytes = await file.arrayBuffer()
 
     const existing = await prisma.document.findFirst({
       where: { candidateProfileId: profile.id, documentType },
     })
-
     if (existing) {
       await prisma.document.delete({ where: { id: existing.id } })
+    }
+
+    const useBlobStorage = !!process.env.BLOB_READ_WRITE_TOKEN
+    let fileUrl: string
+    let blobUrl: string | undefined
+    let fileData: Buffer | undefined
+
+    if (useBlobStorage) {
+      const blob = await put(`documentos/${profile.id}/${fileName}`, file, {
+        access: 'public',
+        contentType: file.type,
+      })
+      blobUrl = blob.url
+      fileUrl = blob.url
+    } else {
+      const bytes = await file.arrayBuffer()
+      fileData = Buffer.from(bytes)
+      fileUrl = `/api/candidatos/documentos/${documentId}/arquivo`
     }
 
     await prisma.document.create({
@@ -58,9 +75,10 @@ export async function POST(request: NextRequest) {
         fileName,
         originalName: file.name,
         fileUrl,
+        blobUrl,
         mimeType: file.type,
         size: file.size,
-        fileData: Buffer.from(bytes),
+        fileData,
         status: 'ENVIADO',
         uploadedAt: new Date(),
       },
@@ -79,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, fileUrl })
   } catch (error) {
-    console.error('[DOCUMENTO POST]', error)
+    logger.error('DOCUMENTO UPLOAD', 'Erro ao salvar documento', error)
     return NextResponse.json({ error: 'Erro ao salvar documento' }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ADMIN_ROLES, getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 function contentDisposition(fileName: string) {
   const safeName = fileName.replace(/[\r\n"]/g, '_')
@@ -29,11 +30,14 @@ export async function GET(
 
     if (!canAccess) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
 
+    if (doc.blobUrl) {
+      return NextResponse.redirect(doc.blobUrl)
+    }
+
     if (!doc.fileData) {
       if (doc.fileUrl.startsWith('/uploads/')) {
         return NextResponse.redirect(new URL(doc.fileUrl, request.url))
       }
-
       return NextResponse.json({ error: 'Arquivo nao encontrado' }, { status: 404 })
     }
 
@@ -48,7 +52,7 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('[DOCUMENTO ARQUIVO GET]', error)
+    logger.error('DOCUMENTO ARQUIVO', 'Erro ao servir arquivo', error)
     return NextResponse.json({ error: 'Erro ao abrir documento' }, { status: 500 })
   }
 }

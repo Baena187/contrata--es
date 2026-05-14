@@ -3,11 +3,27 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { setAuthCookie } from '@/lib/auth'
 import { isAdminRole } from '@/lib/permissions'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 import { Role } from '@/types'
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(`login:${ip}`, 5, 15 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+      { status: 429 }
+    )
+  }
+
+  let body: any
   try {
-    const body = await request.json()
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  }
+
+  try {
     const { email, password } = body
 
     if (!email || !password) {
@@ -35,7 +51,7 @@ export async function POST(request: NextRequest) {
     const redirectTo = isAdminRole(user.role) ? '/admin/dashboard' : '/candidato/dashboard'
     return NextResponse.json({ success: true, redirectTo, role: user.role })
   } catch (error) {
-    console.error('[AUTH LOGIN]', error)
+    logger.error('AUTH LOGIN', 'Erro ao autenticar', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

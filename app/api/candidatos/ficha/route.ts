@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { isValidCPF, isValidCNPJ } from '@/lib/validations'
+import { logger } from '@/lib/logger'
 
 export async function PUT(request: NextRequest) {
+  let body: any
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
+  }
+
   try {
     const user = await getAuthCookie()
     if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-    const body = await request.json()
-
     const profile = await prisma.candidateProfile.findUnique({ where: { userId: user.userId } })
     if (!profile) return NextResponse.json({ error: 'Perfil não encontrado' }, { status: 404 })
+
+    if (body.cpf && !isValidCPF(body.cpf)) {
+      return NextResponse.json({ error: 'CPF inválido.' }, { status: 400 })
+    }
+    if (body.cnpj && !isValidCNPJ(body.cnpj)) {
+      return NextResponse.json({ error: 'CNPJ inválido.' }, { status: 400 })
+    }
 
     // Atualizar perfil principal
     await prisma.candidateProfile.update({
@@ -157,7 +171,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[FICHA PUT]', error)
+    logger.error('FICHA PUT', 'Erro ao salvar ficha', error)
     return NextResponse.json({ error: 'Erro ao salvar' }, { status: 500 })
   }
 }

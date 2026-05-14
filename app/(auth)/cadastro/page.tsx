@@ -28,8 +28,8 @@ export default function CadastroPage() {
       setError('As senhas não coincidem')
       return
     }
-    if (form.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres')
+    if (!/^(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.password)) {
+      setError('A senha deve ter no mínimo 8 caracteres, uma letra maiúscula e um número.')
       return
     }
 
@@ -102,7 +102,7 @@ export default function CadastroPage() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="8+ caracteres, maiúscula e número"
                 value={form.password}
                 onChange={handleChange}
                 required

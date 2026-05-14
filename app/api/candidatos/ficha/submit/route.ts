@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[FICHA SUBMIT]', error)
+    logger.error('FICHA SUBMIT', 'Erro ao enviar cadastro', error)
     return NextResponse.json({ error: 'Erro ao enviar cadastro' }, { status: 500 })
   }
 }

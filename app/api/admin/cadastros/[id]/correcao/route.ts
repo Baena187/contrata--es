@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { can } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 import { Role } from '@/types'
 
 export async function POST(
@@ -52,7 +53,7 @@ export async function POST(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ADMIN CORRECAO]', error)
+    logger.error('ADMIN CORRECAO', 'Erro ao solicitar correção', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

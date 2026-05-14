@@ -2,7 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { can } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 import { Role } from '@/types'
+
+const REPRESENTADA = {
+  razaoSocial:        process.env.REPRESENTADA_RAZAO_SOCIAL        ?? '',
+  cnpj:               process.env.REPRESENTADA_CNPJ                ?? '',
+  endereco:           process.env.REPRESENTADA_ENDERECO             ?? '',
+  cidade:             process.env.REPRESENTADA_CIDADE               ?? '',
+  uf:                 process.env.REPRESENTADA_UF                   ?? '',
+  cep:                process.env.REPRESENTADA_CEP                  ?? '',
+  representanteLegal: process.env.REPRESENTADA_REPRESENTANTE_LEGAL  ?? '',
+  representanteCpf:   process.env.REPRESENTADA_REPRESENTANTE_CPF    ?? '',
+  representanteRg:    process.env.REPRESENTADA_REPRESENTANTE_RG     ?? '',
+  signatureCity:      process.env.REPRESENTADA_CIDADE               ?? '',
+  signatureState:     process.env.REPRESENTADA_UF                   ?? '',
+}
 
 const DEFAULT_COMMISSIONS = [
   { category: 'Massas e similares', minPercent: 1, maxPercent: 3 },
@@ -26,18 +41,18 @@ async function applyUpsert(contractId: string, body: any, userId: string, isNew:
   const updated = await prisma.generatedContract.update({
     where: { id: contractId },
     data: {
-      representadaRazaoSocial: body.representadaRazaoSocial ?? 'FÓRMULA DISTRIBUIDORA DE ALIMENTOS LTDA',
-      representadaCnpj: body.representadaCnpj ?? '13.555.022/0001-60',
-      representadaEndereco: body.representadaEndereco ?? 'Rua São José, 69, Jardim América',
-      representadaCidade: body.representadaCidade ?? 'Várzea Grande',
-      representadaUf: body.representadaUf ?? 'MT',
-      representadaCep: body.representadaCep ?? '78110-800',
-      representadaRepresentanteLegal: body.representadaRepresentanteLegal ?? 'HELBERTY KOWALSKI GONÇALVES',
-      representadaRepresentanteCpf: body.representadaRepresentanteCpf ?? '013.808.871-35',
-      representadaRepresentanteRg: body.representadaRepresentanteRg ?? '13665359/SSP-MT',
+      representadaRazaoSocial: body.representadaRazaoSocial ?? REPRESENTADA.razaoSocial,
+      representadaCnpj: body.representadaCnpj ?? REPRESENTADA.cnpj,
+      representadaEndereco: body.representadaEndereco ?? REPRESENTADA.endereco,
+      representadaCidade: body.representadaCidade ?? REPRESENTADA.cidade,
+      representadaUf: body.representadaUf ?? REPRESENTADA.uf,
+      representadaCep: body.representadaCep ?? REPRESENTADA.cep,
+      representadaRepresentanteLegal: body.representadaRepresentanteLegal ?? REPRESENTADA.representanteLegal,
+      representadaRepresentanteCpf: body.representadaRepresentanteCpf ?? REPRESENTADA.representanteCpf,
+      representadaRepresentanteRg: body.representadaRepresentanteRg ?? REPRESENTADA.representanteRg,
       operationZone: body.operationZone ?? null,
-      signatureCity: body.signatureCity ?? 'Várzea Grande',
-      signatureState: body.signatureState ?? 'MT',
+      signatureCity: body.signatureCity ?? REPRESENTADA.signatureCity,
+      signatureState: body.signatureState ?? REPRESENTADA.signatureState,
       signatureDate: body.signatureDate ? new Date(body.signatureDate) : null,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
@@ -174,7 +189,7 @@ async function upsertHandler(request: NextRequest, params: Promise<{ id: string 
 
     return NextResponse.json({ contract: full })
   } catch (error: any) {
-    console.error('[CONTRATO UPSERT]', error)
+    logger.error('CONTRATO UPSERT', 'Erro ao salvar contrato', error)
     return NextResponse.json({ error: error.message ?? 'Erro interno' }, { status: 500 })
   }
 }

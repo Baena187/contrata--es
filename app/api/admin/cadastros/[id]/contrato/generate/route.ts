@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { can } from '@/lib/permissions'
+import { logger } from '@/lib/logger'
 import { Role } from '@/types'
 import { generateContractDocx } from '@/lib/contracts/generate-contract'
 import type { ContractData } from '@/lib/contracts/render-contract-html'
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     docxBuffer = await generateContractDocx(contractData)
   } catch (docxErr: any) {
-    console.error('[GENERATE DOCX ERROR]', docxErr)
+    logger.error('GENERATE DOCX', 'Erro ao gerar DOCX', docxErr)
     return NextResponse.json(
       { error: 'Erro ao gerar o arquivo DOCX', detail: docxErr.message },
       { status: 500 }
